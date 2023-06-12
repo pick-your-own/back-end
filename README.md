@@ -127,3 +127,35 @@ Starting the day with clearly defined goals and breaking down the tasks will all
 - We will be using PR review process with two people reviewing code before merge.
 - Anyone can merge them as long as they have been properly reviewed.
 - Set schedule and we will be in a remo call together.
+
+### User Stories
+
+#### Multiplayer
+
+- As an user I would like to be able to play this game with my friends.
+- Have rooms with 4 player limit so you can play with friends.
+- Users succesfully connect to eachothers rooms.
+
+#### Fun Looting
+
+- As an user I want a fun looting system where even though I am playing with my friends I can get different loot then them.
+- Create a non shared looting system.
+- Loot dropped randomly and split evenly through the party.
+
+#### Dungeon Stories
+
+- As an user I want cool and different stories when I go into the dungeons so that the game does not get boring.
+- Use openAI to create a different story every time you go into a dungeon.
+- Upon entering a dungeon players are given a unique story.
+
+#### Loot Saving
+
+- As an user I want to be able to save my loot so when I get off and get back on it is still there.
+- Use Auth so that users are able to save specific loot on their account and use it through multiple play throughs.
+- When logging back in your loot is still there.
+
+#### Fight Friends
+
+- As an user I want to be able to fight my friends to show off my loot.
+- Create 1v1 player vs player rooms where players can compete.
+- Able to connect to a room where you and a friend can fight.
