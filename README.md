@@ -159,3 +159,7 @@ Starting the day with clearly defined goals and breaking down the tasks will all
 - As an user I want to be able to fight my friends to show off my loot.
 - Create 1v1 player vs player rooms where players can compete.
 - Able to connect to a room where you and a friend can fight.
+
+## UML
+
+![UML](./assets/images/UML-first-draft.png)
