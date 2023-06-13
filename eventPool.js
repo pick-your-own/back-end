@@ -1,0 +1,26 @@
+// Description: Event pool for socket.io events
+const Events = require('events');
+const eventEmitter = new Events();
+
+const eventPool = {
+  SEND_MESSAGE: 'SEND_MESSAGE',
+  DISCONNECT: 'DISCONNECT',
+  ROOM_CREATED: 'ROOM_CREATED',
+  ROOM_SELECTED: 'ROOM_SELECTED',
+  ROOM_DELETED: 'ROOM_DELETED',
+  USER_LEFT: 'USER_LEFT',
+  USER_JOINED: 'USER_JOINED',
+  USER_REGISTERED: 'USER_REGISTERED',
+  USER_LOGGED_IN: 'USER_LOGGED_IN',
+  USER_LOGGED_OUT: 'USER_LOGGED_OUT',
+  CREATE_ROOM_ERROR: 'CREATE_ROOM_ERROR',
+  JOIN_ROOM_ERROR: 'JOIN_ROOM_ERROR',
+  LEAVE_ROOM_ERROR: 'LEAVE_ROOM_ERROR',
+  SEND_MESSAGE_ERROR: 'SEND_MESSAGE_ERROR',
+};
+
+
+module.exports = {
+  eventPool,
+  eventEmitter,
+};
