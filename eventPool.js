@@ -1,45 +1,60 @@
 'use strict';
 
-// Description: Event pool for socket.io events
 const Events = require('events');
 const eventEmitter = new Events();
 
+// Description: Event pool for socket.io events
 const eventPool = {
-  DISCONNECT: 'DISCONNECT',
-  START_GAME: 'START_GAME',
-  END_GAME: 'END_GAME',
-  NEW_GAME: 'NEW_GAME',
+  DISCONNECT: 'disconnect',
+  START_GAME: 'start_game',
+  END_GAME: 'end_game',
+  NEW_GAME: 'new_game',
 
-  AUTH_LOGIN: 'AUTH_LOGIN',
-  AUTH_LOGOUT: 'AUTH_LOGOUT',
-  PLAYER_SEARCH: 'PLAYER_SEARCH',
+  AUTH_LOGIN: 'auth_login',
+  AUTH_LOGOUT: 'auth_logout',
+  PLAYER_SEARCH: 'player_search',
 
-  USER_JOIN: 'USER_JOIN',
-  USER_LEAVE: 'USER_LEAVE',
-  SEND_MESSAGE: 'SEND_MESSAGE',
+  USER_CHECK_ACCOUNT_RESPONSE: 'user_check_account_response',
+  USER_CHECK_ACCOUNT: 'user_check_account',
+  USER_CREATE_ACCOUNT: 'user_create_account',
+  USER_CREATE_ACCOUNT_RESPONSE: 'user_create_account_response',
+  USER_AUTHENTICATE_SUCCESS: 'user_authenticate_success',
+  USER_AUTHENTICATE_ERROR: 'user_authenticate_error',
+  USER_JOIN_SUCCESS: 'user_join_success',
+  USER_LEAVE_SUCCESS: 'user_leave_success',
+  USER_CREATE_SUCCESS: 'user_create_success',
+  USER_CREATE_ERROR: 'user_create_error',
+  USER_PROFILE_SUCCESS: 'user_profile_success',
+  USER_PROFILE_ERROR: 'user_profile_error',
+  USER_PROFILE_UPDATE_SUCCESS: 'user_profile_update_success',
+  USER_PROFILE_UPDATE_ERROR: 'user_profile_update_error',
+  USER_AUTHENTICATE: 'user_authenticate',
+  USER_LOGIN: 'user_login',
+  USER_JOIN: 'user_join',
+  USER_LEAVE: 'user_leave',
+  SEND_MESSAGE: 'send_message',
 
-  CHARACTER_JOIN: 'CHARACTER_JOIN',
-  CHARACTER_LEAVE: 'CHARACTER_LEAVE',
-  CHARACTER_LEVELED_UP: 'CHARACTER_LEVELED_UP',
-  CHARACTER_DEFEATED: 'CHARACTER_DEFEATED',
-  CHARACTER_VICTORY: 'CHARACTER_VICTORY',
-  CHARACTER_INVENTORY: 'CHARACTER_INVENTORY',
+  CHARACTER_JOIN: 'character_join',
+  CHARACTER_LEAVE: 'character_leave',
+  CHARACTER_LEVELED_UP: 'character_leveled_up',
+  CHARACTER_DEFEATED: 'character_defeated',
+  CHARACTER_VICTORY: 'character_victory',
+  CHARACTER_INVENTORY: 'character_inventory',
 
-  CHARACTER_ACTION_ATTACK: 'CHARACTER_ACTION_ATTACK',
-  CHARACTER_ACTION_DEFEND: 'CHARACTER_ACTION_DEFEND',
-  CHARACTER_ACTION_HEAL: 'CHARACTER_ACTION_HEAL',
-  CHARACTER_ACTION_FLEE: 'CHARACTER_ACTION_FLEE',
-  CHARACTER_ACTION_CUSTOM: 'CHARACTER_ACTION_CUSTOM',
+  CHARACTER_ACTION_ATTACK: 'character_action_attack',
+  CHARACTER_ACTION_DEFEND: 'character_action_defend',
+  CHARACTER_ACTION_HEAL: 'character_action_heal',
+  CHARACTER_ACTION_FLEE: 'character_action_flee',
+  CHARACTER_ACTION_CUSTOM: 'character_action_custom',
 
-  ENEMY_SPAWN: 'ENEMY_SPAWN',
-  ENEMY_KILLED: 'ENEMY_KILLED',
-  LOOT_DROP: 'LOOT_DROP',
+  ENEMY_SPAWN: 'enemy_spawn',
+  ENEMY_KILLED: 'enemy_killed',
+  LOOT_DROP: 'loot_drop',
 
-  USER_JOIN_ERROR: 'USER_JOIN_ERROR',
-  USER_LEAVE_ERROR: 'USER_LEAVE_ERROR',
-  SEND_MESSAGE_ERROR: 'SEND_MESSAGE_ERROR',
+  USER_JOIN_ERROR: 'user_join_error',
+  USER_LEAVE_ERROR: 'user_leave_error',
+  SEND_MESSAGE_ERROR: 'send_message_error',
 };
-
 
 module.exports = {
   eventPool,

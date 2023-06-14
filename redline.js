@@ -1,7 +1,6 @@
 const readline = require('readline');
-const chalk = require('chalk');
+const colors = require('colors');
 const { eventPool } = require('./eventPool');
-// const { characterQueue } = require('./characterQueue');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -22,28 +21,28 @@ function handleAction(action, socket) {
     if (characterId) {
       socket.emit(eventPool.CHARACTER_ACTION_ATTACK, characterId);
     } else {
-      console.log(chalk.red('Invalid action: Character not joined.'));
+      console.log(colors.red('Invalid action: Character not joined.'));
     }
     break;
   case 'Defend':
     if (characterId) {
       socket.emit(eventPool.CHARACTER_ACTION_DEFEND, characterId);
     } else {
-      console.log(chalk.red('Invalid action: Character not joined.'));
+      console.log(colors.red('Invalid action: Character not joined.'));
     }
     break;
   case 'Heal':
     if (characterId) {
       socket.emit(eventPool.CHARACTER_ACTION_HEAL, characterId);
     } else {
-      console.log(chalk.red('Invalid action: Character not joined.'));
+      console.log(colors.red('Invalid action: Character not joined.'));
     }
     break;
   case 'Flee':
     if (characterId) {
       socket.emit(eventPool.CHARACTER_ACTION_FLEE, characterId);
     } else {
-      console.log(chalk.red('Invalid action: Character not joined.'));
+      console.log(colors.red('Invalid action: Character not joined.'));
     }
     break;
   case 'Custom Action':
@@ -52,15 +51,15 @@ function handleAction(action, socket) {
         socket.emit(eventPool.CHARACTER_ACTION_CUSTOM, characterId, customAction);
       });
     } else {
-      console.log(chalk.red('Invalid action: Character not joined.'));
+      console.log(colors.red('Invalid action: Character not joined.'));
     }
     break;
   case 'Quit':
     rl.close();
-    console.log(chalk.yellow('Game ended.'));
+    console.log(colors.yellow('Game ended.'));
     return;
   default:
-    console.log(chalk.red('Invalid action. Please try again.'));
+    console.log(colors.red('Invalid action. Please try again.'));
     break;
   }
 
@@ -78,9 +77,10 @@ function displayAvailableActions() {
   console.log('- Quit (to exit the game)');
 }
 
-function startGame(socket, charId) {
-  characterId = charId; // Assign the characterId to the global variable
-  console.log(chalk.green('Welcome to the game!'));
+function startGame(socket, character) {
+  console.log(colors.green('Welcome to the game!'));
+  console.log(`You have joined the game as ${character.name}`);
+  characterId = character.id; // Assign the characterId to the global variable
   displayAvailableActions();
   promptAction(socket);
 }
