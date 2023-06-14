@@ -30,6 +30,7 @@ const eventPool = {
   USER_PROFILE_UPDATE_ERROR: 'user_profile_update_error',
   USER_AUTHENTICATE: 'user_authenticate',
   USER_LOGIN: 'user_login',
+  USER_LOGIN_RESPONSE: 'user_login_response',
   USER_JOIN: 'user_join',
   USER_LEAVE: 'user_leave',
   SEND_MESSAGE: 'send_message',

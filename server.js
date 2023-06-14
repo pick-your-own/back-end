@@ -3,15 +3,13 @@
 require('dotenv').config();
 const axios = require('axios');
 const { startGame } = require('./redline.js');
-const prompt = require('prompt-sync')();
-
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const colors = require('colors');
 const { UserQueue } = require('./src/lib/UserQueue');
 const { CharacterQueue } = require('./src/lib/CharacterQueue');
 const { eventPool } = require('./eventPool');
-const User = require('./src//models/User');
+const User = require('./src/models/User');
 const userController = require('./src/controllers/userController');
 const jwt = require('jsonwebtoken');
 
@@ -26,6 +24,7 @@ const io = new Server(parseInt(process.env.PORT), {
     methods: ['GET', 'POST'],
   },
 });
+
 
 let userQueue = new UserQueue();
 let characterQueue = new CharacterQueue();
@@ -52,12 +51,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on(eventPool.USER_CREATE_ACCOUNT_RESPONSE, async (newUsername, newPassword, newEmail, message) => {
+  socket.on(eventPool.USER_CREATE_ACCOUNT_RESPONSE, async (newUsername, newPassword, newEmail) => {
     if (newUsername, newPassword, newEmail) {
-  
+
       try {
         // Check if the username is already taken
-        const existingUser = await User.findOne({ newUsername });
+        const existingUser = await User.findOne({ username: newUsername }); // Fix here
         if (existingUser) {
           socket.emit('account_creation_failed', { message: 'Username is already taken' });
           return;
@@ -69,11 +68,11 @@ io.on('connection', (socket) => {
               if (statusCode === 201) {
                 // User registration successful
                 const token = responseBody.token;
-  
+
                 // Associate the user with the socket for session management
                 const user = { newUsername, token };
                 socket.user = user;
-  
+
                 // Emit the USER_AUTHENTICATE_SUCCESS event
                 socket.emit(eventPool.USER_AUTHENTICATE_SUCCESS, { user });
                 socket.emit('account_creation_success', { message: 'Account created successfully!' });
@@ -94,13 +93,37 @@ io.on('connection', (socket) => {
       socket.emit('account_creation_cancelled', { message: 'Account creation cancelled.' });
     }
   });
-  // Authenticate user
-  socket.on(eventPool.USER_AUTHENTICATE, (token) => {
+
+  socket.on(eventPool.USER_LOGIN, async (username, password) => {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const { username } = decoded;
-      const user = userQueue.findUserByUsername(username);
+      const user = await User.findOne({ username });
       if (user) {
+        const isPasswordMatch = await userController.checkPassword(password, user.password);
+        if (!isPasswordMatch) throw new Error('Password is incorrect');
+  
+        // If login is successful, issue a new token
+        const token = jwt.sign({ username: user.username }, JWT_SECRET);
+        
+        // Associate the user with the socket for session management
+        socket.user = user;
+        socket.emit(eventPool.USER_AUTHENTICATE_SUCCESS, { user, token });
+      } else {
+        throw new Error('User not found');
+      }
+    } catch (error) {
+      console.error('Error authenticating user:', error);
+      socket.emit(eventPool.USER_AUTHENTICATE_ERROR, { message: 'Authentication failed' });
+    }
+  });
+
+  
+  socket.on(eventPool.USER_AUTHENTICATE, async (username, password) => {
+    try {
+      const user = await User.findOne({ username });
+      if (user) {
+        const isPasswordMatch = await userController.checkPassword(password, user.password);
+        if (!isPasswordMatch) throw new Error('Password is incorrect');
+  
         // Associate the user with the socket for session management
         socket.user = user;
         socket.emit(eventPool.USER_AUTHENTICATE_SUCCESS, { user });
@@ -112,25 +135,28 @@ io.on('connection', (socket) => {
       socket.emit(eventPool.USER_AUTHENTICATE_ERROR, { message: 'Authentication failed' });
     }
   });
-
-  // User joins the game
-  // User joins the game
-  socket.on(eventPool.USER_JOIN, async (username) => {
-    console.log('Received USER_JOIN event:', username);
-    try {
-      const user = await userQueue.createUser(username);
-      const token = jwt.sign({ username }, JWT_SECRET);
-      // Associate the user with the socket for session management
-      socket.user = user;
-      socket.emit(eventPool.USER_JOIN_SUCCESS, { user, token });
-      io.emit(eventPool.USER_JOIN, user);
-    } catch (error) {
-      console.error('Error creating user:', error);
-      socket.emit(eventPool.USER_JOIN_ERROR, { message: 'Could not create user' });
-    }
+  
+  socket.on(eventPool.USER_AUTHENTICATE_SUCCESS, ({ user }) => {
+    const { username } = user;
+    socket.join(username);  // User joins a room with their username
   });
-
-
+  // // User joins the game
+  // socket.on(eventPool.USER_JOIN, async (username) => {
+  //   console.log('Received USER_JOIN event:', username);
+  //   try {
+  //     const user = await userQueue.createUser(username);
+  //     const token = jwt.sign({ username }, JWT_SECRET);
+  //     console.log('User joined:', user);
+  //     // Associate the user with the socket for session management
+  //     socket.user = user;
+  //     socket.emit(eventPool.USER_JOIN_SUCCESS, { user, token });
+  //     // io.emit(eventPool.USER_JOIN, user);
+  //   } catch (error) {
+  //     console.error('Error creating user:', error);
+  //     socket.emit(eventPool.USER_JOIN_ERROR, { message: 'Could not create user' });
+  //   }
+  // });
+  
   // User leaves the game
   socket.on(eventPool.USER_LEAVE, async (username) => {
     try {
@@ -142,6 +168,7 @@ io.on('connection', (socket) => {
       console.error('Error removing user:', error);
       socket.emit(eventPool.USER_LEAVE_ERROR, { message: 'Could not remove user' });
     }
+    socket.leave(username);  // User leaves their room
   });
 
   // User creates a character
@@ -319,6 +346,7 @@ io.on('connection', (socket) => {
     console.log(colors.yellow(`CLIENT DISCONNECTED FROM SERVER: ${socket.id}`));
     if (socket.user) {
       const { username } = socket.user;
+      socket.leave(username);  // User leaves their room on disconnect
       userQueue.removeUser(username);
       io.emit(eventPool.USER_LEAVE, { username });
     }
