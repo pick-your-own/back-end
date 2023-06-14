@@ -1,15 +1,30 @@
-'use strict';
-
 const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-const characterSchema = new mongoose.Schema({
-  strength: Number,
-  appearance: String,
-  dialogue: String,
+const abilitySchema = new Schema({
+  name: String,
+  description: String,
+  power: Number,
 });
 
-const Character = mongoose.model('character', characterSchema);
+const inventoryItemSchema = new Schema({
+  name: String,
+  description: String,
+  quantity: Number,
+});
 
-module.exports = {
-  Character,
-};
+const playerSchema = new Schema({
+  name: String,
+  health: Number,
+  experience: Number,
+  level: Number,
+  abilities: [abilitySchema],
+  finances: {
+    gold: Number,
+    silver: Number,
+    copper: Number,
+  },
+  inventory: [inventoryItemSchema],
+});
+
+module.exports = mongoose.model('Player', playerSchema);

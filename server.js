@@ -1,6 +1,7 @@
 'use strict';
 
 require('dotenv').config();
+const chalk = require('chalk');
 
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
@@ -18,7 +19,9 @@ const io = new Server(PORT, {
   },
 });
 
-let UserQ = new UserQueue();
+let userQueue = new UserQueue();
+let turnId = 1;
+
 
 mongoose
   .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -27,8 +30,29 @@ mongoose
 
 io.on('connection', (socket) => {
   socket.on(eventPool.USER_JOIN, user => {
-    console.log('connected');
+    console.log('Received PLAYER_JOIN event:', user);
 
+    const updatedUser = { ...user, score: 0 }; // Initialize score property to 0
+    const addedUser = userQueue.addUser(updatedUser);
+
+    socket.emit(eventPool.UPDATE_USER, addedUser);
+    console.log('Sent UPDATE_USER event:', addedUser);
+
+    socket.join('gameRoom');
+    console.log(`User ${user.name} joined the game`);
+
+    io.emit(eventPool.USER_JOIN, userQueue.users);
+
+    const clientsInRoom = socket.adapter.rooms.get('dungeonRoom');
+
+    if (clientsInRoom.size >= 2) {
+      const payload = {
+        turnId: turnId,
+        characterStats: user.character.statistics,
+      };
+
+      socket.to('dungeonRoom').emit(eventPool.START_GAME, payload);
+    }
   });
 
   socket.on('disconnect', () => {
