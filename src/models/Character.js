@@ -38,6 +38,15 @@ const craftingSkillSchema = new Schema({
 });
 
 const characterSchema = new Schema({
+=======
+
+const inventoryItemSchema = new Schema({
+  name: String,
+  description: String,
+  quantity: Number,
+});
+
+const playerSchema = new Schema({
   name: String,
   health: Number,
   experience: Number,

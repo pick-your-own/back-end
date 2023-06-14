@@ -3,6 +3,7 @@
 require('dotenv').config();
 const axios = require('axios');
 const { startGame } = require('./redline.js');
+
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const colors = require('colors');
@@ -29,12 +30,14 @@ const io = new Server(parseInt(process.env.PORT), {
 let userQueue = new UserQueue();
 let characterQueue = new CharacterQueue();
 
+
 mongoose
   .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connected to MongoDB'))
   .catch((error) => console.error('MongoDB connection error:', error));
 
 io.on('connection', (socket) => {
+
   console.log(colors.green('CLIENT CONNECTED TO SERVER: ') + colors.yellow(socket.id));
 
   // Ask user if they have an account
@@ -48,6 +51,7 @@ io.on('connection', (socket) => {
     } else {
       // User does not have an account, ask for new account details
       socket.emit(eventPool.USER_CREATE_ACCOUNT);
+
     }
   });
 
