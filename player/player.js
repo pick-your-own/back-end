@@ -31,19 +31,12 @@ socket.on('connect', () => {
 
 const registerUser = async (username, password, email) => {
   try {
-    const response = await axios.post('http://localhost:3001/register', {
-      username,
-      password,
-      email,
-    });
-
-    localStorage.setItem('token', response.data.token);
-    user.token = response.data.token;
-
+    socket.emit(eventPool.eventPool.USER_CREATE_ACCOUNT_RESPONSE, username, password, email);
   } catch (error) {
-    console.error(error.message);
+    console.error('Error creating account:', error.message);
   }
 };
+
 
 const loginUser = async (username, password) => {
   try {
@@ -72,7 +65,7 @@ socket.on(eventPool.eventPool.USER_CREATE_ACCOUNT, async () => {
   const newEmail = prompt('Enter a new email: ');
 
   try {
-    await registerUser(newUsername, newPassword, newEmail);
+    await socket.emit(eventPool.eventPool.USER_CREATE_ACCOUNT_RESPONSE, newUsername, newPassword, newEmail);
   } catch (error) {
     console.error('Error creating account:', error.message);
   }
