@@ -29,30 +29,6 @@ socket.on('connect', () => {
   console.log(colors.green('Connected to the server.'));
 });
 
-const registerUser = async (username, password, email) => {
-  try {
-    socket.emit(eventPool.eventPool.USER_CREATE_ACCOUNT_RESPONSE, username, password, email);
-  } catch (error) {
-    console.error('Error creating account:', error.message);
-  }
-};
-
-
-const loginUser = async (username, password) => {
-  try {
-    const response = await axios.post('http://localhost:3001/login', {
-      username,
-      password,
-    });
-
-    // localStorage.setItem('token', response.data.token);
-    user.token = response.data.token;
-
-  } catch (error) {
-    console.error(error.message);
-  }
-};
-
 socket.on(eventPool.eventPool.USER_CHECK_ACCOUNT, () => {
   console.log('Do you have an account?');
   const hasAccount = prompt('Enter Y for Yes or N for No: ');
@@ -102,13 +78,14 @@ async function handleGameLogic(user) {
     // Prompt the user to create a character
     const character = await promptCharacterCreation(user.username);
     // Update the user's default character
-    user.defaultCharacter = character.id;
+    user.defaultCharacter = character.name; // Store the default character by its name
     // Join the user to the created character
-    socket.emit(eventPool.eventPool.CHARACTER_JOIN, character.id);
+    socket.emit(eventPool.eventPool.CHARACTER_JOIN, character.name); // Pass the character name
     // Proceed with the game using the created character
-    startGameWithCharacter(character.id);
+    startGameWithCharacter(character.name); // Pass the character name
   }
 }
+
 
 function promptCharacterCreation(username) {
   return new Promise((resolve, reject) => {
@@ -164,9 +141,9 @@ socket.on(eventPool.eventPool.CHARACTER_CREATE_SUCCESS, (data) => {
   socket.emit(eventPool.eventPool.CHARACTER_JOIN, data.character.id);
 });
 
-function startGameWithCharacter(characterId) {
+function startGameWithCharacter(characterName) {
   // Implement your game logic here
-  console.log('Starting game with character:', characterId);
+  console.log('Starting game with character:', characterName);
   // ...
   socket.on(eventPool.eventPool.CHARACTER_ACTION_ATTACK, (data) => {
     console.log(`Character ${data.characterId} attacks: ${data.message}`);
