@@ -2,6 +2,9 @@
   "dependencies": {
     "axios": "^1.4.0",
     "bcrypt": "^5.0.1",
+    "chalk": "^5.2.0",
+    "chance": "^1.1.11",
+    "colors": "^1.4.0",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "eslint": "^8.42.0",
@@ -10,7 +13,8 @@
     "mongodb": "^5.6.0",
     "mongoose": "^6.0.8",
     "prompt-sync": "^4.2.0",
-    "socket.io": "^4.3.2",
+    "socket.io": "^4.6.2",
+    "socket.io-client": "^4.6.2",
     "uuid": "^9.0.0"
   },
   "name": "back-end",
@@ -19,8 +23,10 @@
   "main": "server.js",
   "scripts": {
     "start": "nodemon server.js",
+    "start-player": "node player/player.js",
     "test": "NODE_ENV=test jest --verbose --coverage"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "type": "commonjs"
 }
