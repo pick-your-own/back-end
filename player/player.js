@@ -29,13 +29,15 @@ socket.on('connect', () => {
 
 const registerUser = async (username, password, email) => {
   try {
-    const response = await axios.post(`${SERVER_URL}/register`, {
+    const response = await axios.post('http://localhost:3001/register', {
       username,
       password,
       email,
     });
 
     localStorage.setItem('token', response.data.token);
+    user.token = response.data.token;
+
   } catch (error) {
     console.error(error.message);
   }
@@ -43,12 +45,14 @@ const registerUser = async (username, password, email) => {
 
 const loginUser = async (username, password) => {
   try {
-    const response = await axios.post(`${SERVER_URL}/login`, {
+    const response = await axios.post('http://localhost:3001/login', {
       username,
       password,
     });
 
-    localStorage.setItem('token', response.data.token);
+    // localStorage.setItem('token', response.data.token);
+    user.token = response.data.token;
+
   } catch (error) {
     console.error(error.message);
   }
@@ -72,16 +76,42 @@ socket.on(eventPool.eventPool.USER_CREATE_ACCOUNT, async () => {
   }
 });
 
+// socket.on(eventPool.eventPool.USER_LOGIN, async (data) => { // Update the parameter to receive the data object
+//   console.log('User login', data);
+//   const username = data.username; // Get the username from the data object
+//   const password = data.password; // Get the password from the data object
+//   try {
+//     await loginUser(username, password); // Pass the username and password to the loginUser function
+
+//   } catch (error) {
+//     console.error('Authentication failed:', error.message);
+//   }
+// });
+
 socket.on(eventPool.eventPool.USER_LOGIN, async () => {
   const username = prompt('Enter your username: ');
   const password = prompt('Enter your password: ');
 
   try {
-    await loginUser(username, password);
+    socket.emit(eventPool.eventPool.USER_AUTHENTICATE, username, password);
   } catch (error) {
     console.error('Authentication failed:', error.message);
   }
 });
+
+
+// socket.on(eventPool.eventPool.USER_LOGIN, async () => {
+//   const username = prompt('Enter your username: ');
+//   const password = prompt('Enter your password: ');
+
+//   try {
+//     await loginUser(username, password);
+//   } catch (error) {
+//     console.error('Authentication failed:', error.message);
+//   }
+// });
+
+
 
 socket.on(eventPool.eventPool.USER_AUTHENTICATE_SUCCESS, (data) => {
   console.log('User authenticated:', data.user);

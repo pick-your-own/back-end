@@ -94,36 +94,25 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on(eventPool.USER_LOGIN, async (username, password) => {
-    try {
-      const user = await User.findOne({ username });
-      if (user) {
-        const isPasswordMatch = await userController.checkPassword(password, user.password);
-        if (!isPasswordMatch) throw new Error('Password is incorrect');
-  
-        // If login is successful, issue a new token
-        const token = jwt.sign({ username: user.username }, JWT_SECRET);
-        
-        // Associate the user with the socket for session management
-        socket.user = user;
-        socket.emit(eventPool.USER_AUTHENTICATE_SUCCESS, { user, token });
-      } else {
-        throw new Error('User not found');
-      }
-    } catch (error) {
-      console.error('Error authenticating user:', error);
-      socket.emit(eventPool.USER_AUTHENTICATE_ERROR, { message: 'Authentication failed' });
-    }
-  });
 
   
   socket.on(eventPool.USER_AUTHENTICATE, async (username, password) => {
+    
+    console.log('Received USER_AUTHENTICATE event:', username, password);
+    const name = username;
+    const initialPassword = password;
     try {
-      const user = await User.findOne({ username });
+      const user = await User.findOne({ username: name });
+      console.log('user', user);
+      console.log('userpass', user.password);
+      console.log('pass', initialPassword);
+      const hashPassword = user.password;
       if (user) {
-        const isPasswordMatch = await userController.checkPassword(password, user.password);
-        if (!isPasswordMatch) throw new Error('Password is incorrect');
-  
+        const isPasswordMatch = await userController.login(initialPassword, hashPassword, user);
+        if (isPasswordMatch === false) {
+          throw new Error('Password is incorrect');
+        }
+          
         // Associate the user with the socket for session management
         socket.user = user;
         socket.emit(eventPool.USER_AUTHENTICATE_SUCCESS, { user });

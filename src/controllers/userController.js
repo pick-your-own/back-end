@@ -1,6 +1,19 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+// const { checkPassword } = require('../utils/authUtils');
+
+const checkPassword = async (password, hashedPassword) => {
+  console.log('checkPassword', password, hashedPassword);
+  
+  try {
+    const isPasswordMatch = await bcrypt.compare(password, hashedPassword);
+    return isPasswordMatch;
+  } catch (error) {
+    console.error('Error comparing passwords:', error);
+    throw error;
+  }
+};
 
 const register = async (req, res) => {
   try {
@@ -38,31 +51,52 @@ const register = async (req, res) => {
 };
 
 
-const login = async (req, res) => {
+// const login = async (req, res) => {
+//   console.log('login', req.body);
+//   try {
+//     const { initialPassword, hashPassword, user } = req.body;
+
+//     // Find the user by username
+//     // const user = await User.findOne({ username });
+//     console.log('user', user);
+//     if (!user) {
+//       return res.status(401).json({ message: 'Authentication failed' });
+//     }
+    
+//     console.log('user', user);
+//     console.log('password', initialPassword);
+//     console.log('user.password', hashPassword);
+//     // Compare passwords
+//     const isPasswordMatch = await checkPassword(initialPassword, hashPassword);
+//     if (!isPasswordMatch) {
+//       return res.status(401).json({ message: 'Authentication failed' });
+//     }
+
+//     // Generate a JWT token
+//     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+//     res.status(200).json({ token });
+//   } catch (error) {
+//     console.error('Error logging in:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// };
+
+const login = async (initialPassword, hashPassword, user) => {
   try {
-    const { username, password } = req.body;
-
-    // Find the user by username
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(401).json({ message: 'Authentication failed' });
-    }
-
+    console.log('user', user);
+    console.log('password', initialPassword);
+    console.log('user.password', hashPassword);
     // Compare passwords
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatch) {
-      return res.status(401).json({ message: 'Authentication failed' });
-    }
-
-    // Generate a JWT token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    res.status(200).json({ token });
+    const isPasswordMatch = await checkPassword(initialPassword, hashPassword);
+    return isPasswordMatch;
   } catch (error) {
-    console.error('Error logging in:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error comparing passwords:', error);
+    throw error;
   }
 };
+
+
 
 const profile = async (req, res) => {
   try {
@@ -85,4 +119,5 @@ module.exports = {
   register,
   login,
   profile,
+  checkPassword, // Add the checkPassword function
 };
