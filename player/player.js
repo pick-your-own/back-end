@@ -18,6 +18,8 @@ let user = {
   name: chance.animal(),
   id: 1,
   score: 0,
+  defaultCharacter: null,
+  characters: [],
   username: null,
   password: null,
   token: null, // Added token field to store JWT
@@ -76,18 +78,6 @@ socket.on(eventPool.eventPool.USER_CREATE_ACCOUNT, async () => {
   }
 });
 
-// socket.on(eventPool.eventPool.USER_LOGIN, async (data) => { // Update the parameter to receive the data object
-//   console.log('User login', data);
-//   const username = data.username; // Get the username from the data object
-//   const password = data.password; // Get the password from the data object
-//   try {
-//     await loginUser(username, password); // Pass the username and password to the loginUser function
-
-//   } catch (error) {
-//     console.error('Authentication failed:', error.message);
-//   }
-// });
-
 socket.on(eventPool.eventPool.USER_LOGIN, async () => {
   const username = prompt('Enter your username: ');
   const password = prompt('Enter your password: ');
@@ -99,110 +89,128 @@ socket.on(eventPool.eventPool.USER_LOGIN, async () => {
   }
 });
 
-
-// socket.on(eventPool.eventPool.USER_LOGIN, async () => {
-//   const username = prompt('Enter your username: ');
-//   const password = prompt('Enter your password: ');
-
-//   try {
-//     await loginUser(username, password);
-//   } catch (error) {
-//     console.error('Authentication failed:', error.message);
-//   }
-// });
-
-
-
-socket.on(eventPool.eventPool.USER_AUTHENTICATE_SUCCESS, (data) => {
+socket.on(eventPool.eventPool.USER_AUTHENTICATE_SUCCESS, async (data) => {
   console.log('User authenticated:', data.user);
   user.token = data.token; // Store the received JWT
+
+  // After authentication, proceed with the game logic
+  await handleGameLogic(data.user);
 });
 
+async function handleGameLogic(user) {
+  console.log('User joined the game:', user);
+
+  // Check if the user has a default character
+  if (user.defaultCharacter) {
+    console.log('Default character already exists:', user.defaultCharacter);
+    // Proceed with the game using the existing default character
+    startGameWithCharacter(user.defaultCharacter);
+  } else {
+    // Prompt the user to create a character
+    const character = await promptCharacterCreation(user.username);
+    // Update the user's default character
+    user.defaultCharacter = character.id;
+    // Join the user to the created character
+    socket.emit(eventPool.eventPool.CHARACTER_JOIN, character.id);
+    // Proceed with the game using the created character
+    startGameWithCharacter(character.id);
+  }
+}
+
+function promptCharacterCreation(username) {
+  return new Promise((resolve, reject) => {
+    console.log('Creating a new character for', username);
+    const name = prompt('Enter a character name: ');
+    const description = prompt('Enter a character description: ');
+
+    socket.emit(eventPool.eventPool.CHARACTER_CREATE, username, { name, description });
+
+    socket.on(eventPool.eventPool.CHARACTER_CREATE_SUCCESS, (data) => {
+      console.log('Character created:', data.character);
+      resolve(data.character);
+    });
+
+    socket.on(eventPool.eventPool.CHARACTER_CREATE_ERROR, (error) => {
+      console.error('Error creating character:', error.message);
+      reject(error);
+    });
+  });
+}
 
 socket.on(eventPool.eventPool.USER_AUTHENTICATE_ERROR, (error) => {
   console.error('Authentication failed:', error.message);
 });
 
+function createCharacter(username) {
+  console.log('Creating a new character for', username);
+  const name = prompt('Enter a character name: ');
+  const description = prompt('Enter a character description: ');
+
+  socket.emit(eventPool.eventPool.CHARACTER_CREATE, username, { name, description });
+}
+
 socket.on(eventPool.eventPool.USER_JOIN_SUCCESS, (data) => {
-  
   console.log('User joined the game:', data.user);
+
+  if (data.user.defaultCharacter) {
+    console.log('Default character already exists:', data.user.defaultCharacter);
+  } else {
+    createCharacter(data.user.username); // Prompt the user to create a character
+  }
 });
 
 socket.on(eventPool.eventPool.USER_JOIN_ERROR, (error) => {
   console.error('Error joining the game:', error.message);
 });
 
-// socket.on(eventPool.eventPool.USER_JOIN, (user) => {
-//   console.log(`User ${user.username} has joined the game.`);
-//   socket.emit(eventPool.eventPool.USER_JOIN, {username, token: user.token});
-// });
-
-socket.on(eventPool.eventPool.USER_LEAVE, (data) => {
-  console.log(`User ${data.username} has left the game.`);
-});
-
-socket.on(eventPool.eventPool.USER_LEAVE_ERROR, (error) => {
-  console.error('Error leaving the game:', error.message);
-});
-
 socket.on(eventPool.eventPool.CHARACTER_CREATE_SUCCESS, (data) => {
   console.log('Character created:', data.character);
+  // Update the user's default character
+  user.defaultCharacter = data.character.id;
+  // Join the user to the created character
+  socket.emit(eventPool.eventPool.CHARACTER_JOIN, data.character.id);
 });
 
-socket.on(eventPool.eventPool.CHARACTER_CREATE_ERROR, (error) => {
-  console.error('Error creating character:', error.message);
-});
-
-socket.on(eventPool.eventPool.CHARACTER_JOIN_SUCCESS, (data) => {
-  console.log('Character joined:', data.character);
-});
-
-socket.on(eventPool.eventPool.CHARACTER_JOIN_ERROR, (error) => {
-  console.error('Error joining character:', error.message);
-});
-
-socket.on(eventPool.eventPool.CHARACTER_LEAVE_SUCCESS, (data) => {
-  console.log(`Character ${data.characterId} has left the game.`);
-});
-
-socket.on(eventPool.eventPool.CHARACTER_LEAVE_ERROR, (error) => {
-  console.error('Error leaving character:', error.message);
-});
-
-socket.on(eventPool.eventPool.CHARACTER_ACTION_ATTACK, (data) => {
-  console.log(`Character ${data.characterId} attacks: ${data.message}`);
-});
-
-socket.on(eventPool.eventPool.CHARACTER_ACTION_DEFEND, (data) => {
-  console.log(`Character ${data.characterId} defends: ${data.message}`);
-});
-
-socket.on(eventPool.eventPool.CHARACTER_ACTION_HEAL, data => {
-  console.log(`Character ${data.characterId} heals: ${data.message}`);
-});
-
-socket.on(eventPool.eventPool.CHARACTER_ACTION_FLEE, data => {
-  console.log(`Character ${data.characterId} flees: ${data.message}`);
-});
-
-socket.on(eventPool.eventPool.CHARACTER_ACTION_CUSTOM, data => {
-  console.log(`Character ${data.characterId} performs a custom action: ${data.message}`);
-});
+function startGameWithCharacter(characterId) {
+  // Implement your game logic here
+  console.log('Starting game with character:', characterId);
+  // ...
+  socket.on(eventPool.eventPool.CHARACTER_ACTION_ATTACK, (data) => {
+    console.log(`Character ${data.characterId} attacks: ${data.message}`);
+  });
+  
+  socket.on(eventPool.eventPool.CHARACTER_ACTION_DEFEND, (data) => {
+    console.log(`Character ${data.characterId} defends: ${data.message}`);
+  });
+  
+  socket.on(eventPool.eventPool.CHARACTER_ACTION_HEAL, data => {
+    console.log(`Character ${data.characterId} heals: ${data.message}`);
+  });
+  
+  socket.on(eventPool.eventPool.CHARACTER_ACTION_FLEE, data => {
+    console.log(`Character ${data.characterId} flees: ${data.message}`);
+  });
+  
+  socket.on(eventPool.eventPool.CHARACTER_ACTION_CUSTOM, data => {
+    console.log(`Character ${data.characterId} performs a custom action: ${data.message}`);
+  });
+  socket.on(eventPool.eventPool.CHARACTER_JOIN_SUCCESS, (data) => {
+    console.log('Character joined:', data.character);
+  });
+  
+  socket.on(eventPool.eventPool.CHARACTER_JOIN_ERROR, (error) => {
+    console.error('Error joining character:', error.message);
+  });
+  
+  socket.on(eventPool.eventPool.CHARACTER_LEAVE_SUCCESS, (data) => {
+    console.log(`Character ${data.characterId} has left the game.`);
+  });
+  
+  socket.on(eventPool.eventPool.CHARACTER_LEAVE_ERROR, (error) => {
+    console.error('Error leaving character:', error.message);
+  });
+}
 
 socket.on('disconnect', () => {
   console.log(colors.yellow('Disconnected from the server.'));
 });
-
-const username = prompt('Choose a username: '.yellow);
-if (username !== '') {
-  user.name = username;
-  socket.emit(eventPool.eventPool.USER_JOIN, username);
-}
-
-const shouldLeaveGame = prompt('Would you like to leave the game? (Y/N): '.yellow);
-if (shouldLeaveGame.toUpperCase() === 'Y') {
-  socket.emit(eventPool.eventPool.USER_LEAVE, username);
-  console.log('You have left the game.');
-} else {
-  console.log('You have chosen to stay in the game.');
-}
