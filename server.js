@@ -36,9 +36,10 @@ const io = new Server(parseInt(process.env.PORT), {
 let userQueue = new UserQueue();
 let characterQueue = new CharacterQueue();
 
-mongoose.connect(MONGODB_URI, {useNewUrlParser: true, useUnifiedTopology: true})
+mongoose
+  .connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connected to MongoDB'))
-  .catch(error => console.error('MongoDB connection error:', error));
+  .catch((error) => console.error('MongoDB connection error:', error));
 
 // io.on('connection', handleEvents);
 
@@ -49,8 +50,12 @@ const authenticateUser = async (username, password) => {
   const user = await User.findOne({ username });
 
   // Compares the password with the user's hashed password
-  const { user: loggedInUser, token } = await userController.login(password, user.password, user);
-  
+  const { user: loggedInUser, token } = await userController.login(
+    password,
+    user.password,
+    user,
+  );
+
   return {
     user: {
       username: loggedInUser.username,
@@ -110,7 +115,7 @@ io.on('connection', (socket) => {
                   const user = { username: newUsername, token };
                   socket.user = user;
 
-                  socket.emit(eventPool.USER_AUTHENTICATE_SUCCESS, { user });
+                  socket.emit(eventPool.USER_AUTHENTICATE_SUCCESS, { user, token });
                   socket.emit('account_creation_success', {
                     message: 'Account created successfully!',
                   });
@@ -135,12 +140,12 @@ io.on('connection', (socket) => {
   socket.on(eventPool.USER_AUTHENTICATE, (username, password) => {
     console.log('User attempting to authenticate', username, password);
     authenticateUser(username, password)
-      .then(({user, token}) => {
+      .then(({ user, token }) => {
         console.log('User authenticated:', user);
         socket.user = user;
         socket.emit(eventPool.USER_AUTHENTICATE_SUCCESS, { user, token });
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error authenticating user:', error);
         socket.emit(eventPool.USER_AUTHENTICATE_ERROR, {
           message: 'Authentication failed',
@@ -149,21 +154,25 @@ io.on('connection', (socket) => {
   });
 
   // Room handlers can be condensed
-  ['ROOM_CREATE', 'ROOM_JOIN', 'ROOM_LEAVE'].forEach(event => {
+  ['ROOM_CREATE', 'ROOM_JOIN', 'ROOM_LEAVE'].forEach((event) => {
     socket.on(event, async (roomName) => {
       try {
-        if (!io.sockets.adapter.rooms[roomName] && event !== 'ROOM_CREATE') throw new Error('Room does not exist');
-        if (io.sockets.adapter.rooms[roomName] && event === 'ROOM_CREATE') throw new Error('Room already exists');
+        if (!io.sockets.adapter.rooms[roomName] && event !== 'ROOM_CREATE')
+          throw new Error('Room does not exist');
+        if (io.sockets.adapter.rooms[roomName] && event === 'ROOM_CREATE')
+          throw new Error('Room already exists');
 
         socket[event.toLowerCase()](roomName);
         socket.emit(`${event}_SUCCESS`, { roomName });
       } catch (error) {
         console.error(`Error handling room ${event.toLowerCase()}:`, error);
-        socket.emit(`${event}_ERROR`, { message: `Could not ${event.toLowerCase()} room.` });
+        socket.emit(`${event}_ERROR`, {
+          message: `Could not ${event.toLowerCase()} room.`,
+        });
       }
     });
   });
-    
+
   socket.on(eventPool.USER_LOGOUT, () => {
     socket.emit(eventPool.USER_LOGOUT_SUCCESS);
   });
@@ -191,7 +200,7 @@ io.on('connection', (socket) => {
       socket.emit(eventPool.CHARACTER_JOIN_ERROR, {
         message: 'Could not join default character',
       });
-    }    
+    }
   };
 
   socket.on(eventPool.USER_AUTHENTICATE_SUCCESS, async ({ user }) => {
@@ -215,46 +224,49 @@ io.on('connection', (socket) => {
   });
 
   // User creates a character
-  socket.on(eventPool.CHARACTER_CREATE, async (currentUser, name, description) => {
-    console.log('currentUser:', currentUser);
-    console.log('currentUser.user:', currentUser.user);
-    const { username } = currentUser.user;
-    const characterData = { name, description };
-    console.log('username:', username);
-    const charName = characterData.name.name;
-    const charDesc = characterData.name.description;
-    const newCharData = { name: charName, description: charDesc };
-    console.log('newChatData:', newCharData);
-    try {
-      // Save the character to the database
-      const character = await Character.create(newCharData);
-      const user = await User.findOneAndUpdate(
-        { username },
-        {
-          $set: {
-            defaultCharacter: character._id,
-            defaultCharacterName: character.name,
+  socket.on(
+    eventPool.CHARACTER_CREATE,
+    async (currentUser, name, description) => {
+      console.log('currentUser.user.user:', currentUser.user.user);
+      const { username } = currentUser.user.user;
+      const characterData = { name, description };
+      console.log('username:', username);
+      const charName = characterData.name.name;
+      const charDesc = characterData.name.description;
+      const newCharData = { name: charName, description: charDesc };
+      console.log('newChatData:', newCharData);
+      try {
+        // Save the character to the database
+        const character = await Character.create(newCharData);
+        const user = await User.findOneAndUpdate(
+          { username },
+          {
+            $set: {
+              defaultCharacter: character._id,
+              defaultCharacterName: character.name,
+            },
+            $push: {
+              characters: character._id,
+            },
           },
-          $push: {
-            characters: character._id,
-          },
-        },
-        { new: true },
-      );
-      console.log(`Character ${character.name} created`);
-      socket.emit(eventPool.CHARACTER_CREATE_SUCCESS, { character });
-      socket.user = user; // Update the user object stored in the socket
+          { new: true },
+        );
+        console.log(`Character ${character.name} created`);
+        socket.emit(eventPool.CHARACTER_CREATE_SUCCESS, { character });
+        socket.user = user; // Update the user object stored in the socket
 
-      io.emit(eventPool.CHARACTER_CREATE, character);
-    } catch (error) {
-      console.error('Error creating character:', error);
-      socket.emit(eventPool.CHARACTER_CREATE_ERROR, {
-        message: 'Could not create character',
-      });
-    }
-  });
-  
+        io.emit(eventPool.CHARACTER_CREATE, character);
+      } catch (error) {
+        console.error('Error creating character:', error);
+        socket.emit(eventPool.CHARACTER_CREATE_ERROR, {
+          message: 'Could not create character',
+        });
+      }
+    },
+  );
+
   socket.on(eventPool.CHARACTER_JOIN, async (characterId) => {
+    console.log('characterId:', characterId);
     try {
       // Find the character in the database
       const character = await Character.findById(characterId);
@@ -263,7 +275,7 @@ io.on('connection', (socket) => {
       }
       console.log('Character joined');
       socket.emit(eventPool.CHARACTER_JOIN_SUCCESS, { character });
-      startGame(socket, characterId); // Call the startGame function and pass the socket and characterId
+      startGame(socket, character); // Call the startGame function and pass the socket and characterId
     } catch (error) {
       console.error('Error joining character:', error);
       socket.emit(eventPool.CHARACTER_JOIN_ERROR, {
@@ -271,7 +283,6 @@ io.on('connection', (socket) => {
       });
     }
   });
-  
 
   // Character leaves the game
   socket.on(eventPool.CHARACTER_LEAVE, async (characterId) => {
@@ -291,24 +302,26 @@ io.on('connection', (socket) => {
   const conversationHistories = new Map();
 
   const getOpenAIResponse = async (action, characterId) => {
+    console.log('getOpenAIResponse action:', action);
+    console.log('getOpenAIResponse characterId:', characterId);
     try {
       let conversationHistory = conversationHistories.get(characterId);
       if (!conversationHistory) {
         conversationHistory = [];
         conversationHistories.set(characterId, conversationHistory);
       }
-      const prompt = `Action: ${action}`;
-      conversationHistory.push(prompt);
+      conversationHistory.push(action);
   
       const fullPrompt = conversationHistory.join('\n');
   
       const response = await openai.createCompletion({
         model: 'text-davinci-003',
         prompt: fullPrompt,
-        max_tokens: 10,
-        temperature: 0,
+        max_tokens: 50, // Increase the number of tokens to generate a longer response
+        temperature: 0.7, // Adjust the temperature to control the randomness of the response
       });
-      const responseText = response.data.choices[0].text;
+  
+      const responseText = response.data.choices[0].text.trim();
       conversationHistory.push(responseText);
   
       return responseText;
@@ -316,34 +329,48 @@ io.on('connection', (socket) => {
       console.error('Error generating action:', error);
     }
   };
-  
-  
+
   // Character handlers
-  ['ATTACK', 'DEFEND', 'HEAL', 'FLEE'].forEach(action => {
+  ['ATTACK', 'DEFEND', 'HEAL', 'FLEE'].forEach((action) => {
     socket.on(`CHARACTER_ACTION_${action}`, async (characterId) => {
-      let character = characterQueue.read(characterId);
-      const actionText = `${character.name} ${action.toLowerCase()}. What happens next?`;
-      const message = await getOpenAIResponse(actionText);
-      if (message) {
-        io.emit(`CHARACTER_ACTION_${action}`, { characterId, message });
-      } else {
-        console.error(`Error performing ${action} action`);
+      console.log('characterId:', characterId);
+      try {
+        let character = characterQueue.read(characterId);
+        console.log('characterId:', characterId);
+        const actionText = `${
+          character.name
+        } ${action.toLowerCase()}. What happens next?`;
+        const message = await getOpenAIResponse(actionText, characterId);
+        if (message) {
+          io.emit(`CHARACTER_ACTION_${action}`, { characterId, message });
+        } else {
+          console.error(`Error performing ${action} action`);
+        }
+      } catch (error) {
+        console.error(`Error performing ${action} action:`, error);
       }
     });
   });
 
   // Character performs a custom action
-  socket.on(eventPool.CHARACTER_ACTION_CUSTOM, async (characterId, customAction) => {
-    let character = characterQueue.read(characterId);
-    const actionText = `${character.name} ${customAction}. What happens next?`;
-    const message = await getOpenAIResponse(actionText);
-    if (message) {
-      io.emit(eventPool.CHARACTER_ACTION_CUSTOM, { characterId, message });
-    } else {
-      console.error('Error performing custom action');
-    }
-  });
-
+  socket.on(
+    eventPool.CHARACTER_ACTION_CUSTOM,
+    async (characterId, customAction) => {
+      console.log('characterId:', characterId);
+      try {
+        let character = characterQueue.read(characterId);
+        const actionText = `${character.name} ${customAction}. What happens next?`;
+        const message = await getOpenAIResponse(actionText, characterId);
+        if (message) {
+          io.emit(eventPool.CHARACTER_ACTION_CUSTOM, { characterId, message });
+        } else {
+          console.error('Error performing custom action');
+        }
+      } catch (error) {
+        console.error('Error performing custom action:', error);
+      }
+    },
+  );
 
   socket.on('disconnect', () => {
     console.log(colors.yellow(`CLIENT DISCONNECTED FROM SERVER: ${socket.id}`));
@@ -354,7 +381,7 @@ io.on('connection', (socket) => {
         io.emit('ROOM_LEAVE', { roomName });
       }
     });
-  
+
     if (socket.user) {
       const { username } = socket.user;
       socket.leave(username); // User leaves their room on disconnect

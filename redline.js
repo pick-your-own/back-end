@@ -1,7 +1,14 @@
+const readline = require('readline');
 const colors = require('colors');
 const { eventPool } = require('./eventPool');
 
 let characterId = '';
+
+// Creating readline interface
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
 function handleAction(action, socket) {
   switch (action) {
@@ -35,23 +42,19 @@ function handleAction(action, socket) {
     break;
   case 'Custom Action':
     if (characterId) {
-      console.log(colors.yellow('Enter custom action:'));
-      process.stdin.once('data', (customAction) => {
+      rl.question(colors.yellow('Enter custom action:\n'), (customAction) => {
         socket.emit(
           eventPool.CHARACTER_ACTION_CUSTOM,
           characterId,
-          customAction.toString().trim(),
+          customAction.trim(),
         );
       });
     } else {
       console.log(colors.red('Invalid action: Character not joined.'));
     }
     break;
-  case 'Quit':
-    endGame();
-    break;
   default:
-    console.log(colors.red('Invalid action. Please try again.'));
+    console.log(colors.red(`Invalid action: ${action}. Please try again.`));
     displayAvailableActions();
     break;
   }
@@ -69,26 +72,25 @@ function displayAvailableActions() {
 
 function startGame(socket, character) {
   console.log(colors.green('Welcome to the game!'));
-  console.log(`You have joined the game as ${character.name}`);
-  characterId = character.id; // Assign the characterId to the global variable
+  console.log(`You have joined the game as ${character}`);
+  characterId = character;
   displayAvailableActions();
 
-  process.stdin.setEncoding('utf8');
-  process.stdin.on('data', (data) => {
-    const input = data.trim();
-    handleAction(input, socket);
+  rl.on('line', (input) => {
+    handleAction(input.trim(), socket);
   });
 
-  process.stdin.on('end', () => {
+  rl.on('close', () => {
     endGame();
   });
 }
 
 function endGame() {
   console.log(colors.yellow('Game ended.'));
-  process.stdin.removeAllListeners('data');
+  rl.close();
   process.exit(0);
 }
+
 
 module.exports = {
   startGame,
