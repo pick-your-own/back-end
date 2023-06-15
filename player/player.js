@@ -309,7 +309,7 @@ function handleAction(action) {
     methodDescription = prompt('Enter custom action: ');
     socket.emit(
       eventPool.eventPool.CHARACTER_ACTION_CUSTOM,
-      user.defaultCharacter.id,
+      user.defaultCharacter,
       methodDescription,
     );
     break;
