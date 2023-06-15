@@ -1,19 +1,7 @@
-const readline = require('readline');
 const colors = require('colors');
 const { eventPool } = require('./eventPool');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
 let characterId = '';
-
-function promptAction(socket) {
-  rl.question('Choose an action: ', (action) => {
-    handleAction(action, socket);
-  });
-}
 
 function handleAction(action, socket) {
   switch (action) {
@@ -47,24 +35,26 @@ function handleAction(action, socket) {
     break;
   case 'Custom Action':
     if (characterId) {
-      rl.question('Enter custom action: ', (customAction) => {
-        socket.emit(eventPool.CHARACTER_ACTION_CUSTOM, characterId, customAction);
+      console.log(colors.yellow('Enter custom action:'));
+      process.stdin.once('data', (customAction) => {
+        socket.emit(
+          eventPool.CHARACTER_ACTION_CUSTOM,
+          characterId,
+          customAction.toString().trim(),
+        );
       });
     } else {
       console.log(colors.red('Invalid action: Character not joined.'));
     }
     break;
   case 'Quit':
-    rl.close();
-    console.log(colors.yellow('Game ended.'));
-    return;
+    endGame();
+    break;
   default:
     console.log(colors.red('Invalid action. Please try again.'));
+    displayAvailableActions();
     break;
   }
-
-  displayAvailableActions();
-  promptAction(socket);
 }
 
 function displayAvailableActions() {
@@ -82,7 +72,22 @@ function startGame(socket, character) {
   console.log(`You have joined the game as ${character.name}`);
   characterId = character.id; // Assign the characterId to the global variable
   displayAvailableActions();
-  promptAction(socket);
+
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', (data) => {
+    const input = data.trim();
+    handleAction(input, socket);
+  });
+
+  process.stdin.on('end', () => {
+    endGame();
+  });
+}
+
+function endGame() {
+  console.log(colors.yellow('Game ended.'));
+  process.stdin.removeAllListeners('data');
+  process.exit(0);
 }
 
 module.exports = {

@@ -39,6 +39,11 @@ const craftingSkillSchema = new Schema({
 
 const characterSchema = new Schema({
   name: String,
+  description: String,
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // Reference to the User model
+  },
   health: Number,
   experience: Number,
   level: Number,
